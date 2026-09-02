@@ -1,0 +1,10 @@
+{
+  "id": "flexible-canvas-anchors",
+  "name": "Flexible Canvas Anchors",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.1",
+  "description": "Add flexible edge anchor points to Canvas nodes.",
+  "author": "Willy Kamte",
+  "authorUrl": "https://github.com/8widerstand",
+  "isDesktopOnly": true
+}
