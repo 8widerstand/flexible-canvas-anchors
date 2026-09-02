@@ -1,0 +1,46 @@
+{
+  "name": "flexible-canvas-anchors",
+  "version": "0.1.0",
+  "description": "Add flexible edge anchor points to Obsidian Canvas nodes.",
+  "private": true,
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/8widerstand/flexible-canvas-anchors.git"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "canvas"
+  ],
+  "author": "Willy Kamte",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/8widerstand/flexible-canvas-anchors/issues"
+  },
+  "homepage": "https://github.com/8widerstand/flexible-canvas-anchors#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.1",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.4.2",
+    "globals": "^17.12.0",
+    "jiti": "^2.7.0",
+    "obsidian": "^1.13.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "esbuild@0.25.5": true
+  }
+}
