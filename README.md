@@ -35,7 +35,14 @@ The MVP will allow users to:
 
 The project is currently in active development.
 
-The plugin scaffold is complete, and a minimal plugin can be built and loaded successfully in Obsidian.
+The plugin scaffold is complete, and the plugin can be built and loaded successfully in Obsidian.
+
+A read-only runtime inspection spike has confirmed on Obsidian Desktop `1.13.7` that live Canvas nodes and edges can be
+accessed through an isolated internal API boundary. The inspection also confirmed that native edge endpoints store a
+side but no position along that side.
+
+The runtime findings and resulting architecture are documented in
+[Canvas Runtime Inspection](docs/research/canvas-runtime-inspection.md).
 
 Flexible Canvas anchor functionality is not implemented yet.
 
