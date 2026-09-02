@@ -44,7 +44,8 @@ side but no position along that side.
 The runtime findings and resulting architecture are documented in
 [Canvas Runtime Inspection](docs/research/canvas-runtime-inspection.md).
 
-Flexible Canvas anchor functionality is not implemented yet.
+The pure anchor geometry layer is now implemented independently of Obsidian. It calculates an anchor point from
+a node's bounds, a side, and a ratio between `0` and `1`.
 
 ## Technical Constraints
 
