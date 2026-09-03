@@ -40,13 +40,15 @@ The plugin scaffold is complete, and the plugin can be built and loaded successf
 A read-only runtime inspection spike has confirmed on Obsidian Desktop `1.13.7` that live Canvas nodes and edges can be
 accessed through an isolated internal API boundary. The inspection also confirmed that native edge endpoints store a
 side but no position along that side.
-
 The runtime findings and resulting architecture are documented in
 [Canvas Runtime Inspection](docs/research/canvas-runtime-inspection.md).
 
 The pure anchor geometry layer is now implemented independently of Obsidian. It calculates an anchor point from
 a node's bounds, a side, and a ratio between `0` and `1`.
-A Canvas node adapter now validates live internal node data and extracts the position and dimensions required by the geometry layer.
+A read-only UI spike now renders three temporary anchor markers on every side of each live Canvas node.
+The markers follow node movement, resizing, and Canvas zoom, and they are removed when hidden or when the plugin is disabled.
+This spike does not yet create, reconnect, or persist Canvas edges.
+![img.png](img.png)
 
 ## Technical Constraints
 
