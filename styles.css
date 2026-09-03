@@ -1,0 +1,35 @@
+.flexible-canvas-anchors__marker {
+  position: absolute;
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--background-primary);
+  border-radius: 50%;
+  background-color: var(--interactive-accent);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.flexible-canvas-anchors__marker[data-side="top"] {
+  top: 0;
+  left: var(--flexible-canvas-anchors-ratio);
+  transform: translate(-50%, -50%);
+}
+
+.flexible-canvas-anchors__marker[data-side="right"] {
+  top: var(--flexible-canvas-anchors-ratio);
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+.flexible-canvas-anchors__marker[data-side="bottom"] {
+  bottom: 0;
+  left: var(--flexible-canvas-anchors-ratio);
+  transform: translate(-50%, 50%);
+}
+
+.flexible-canvas-anchors__marker[data-side="left"] {
+  top: var(--flexible-canvas-anchors-ratio);
+  left: 0;
+  transform: translate(-50%, -50%);
+}

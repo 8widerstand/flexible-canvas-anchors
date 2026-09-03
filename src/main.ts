@@ -2,9 +2,17 @@ import {Notice, Plugin, TextFileView} from "obsidian";
 import type {CanvasRuntime} from "./interface/canvasRuntime";
 import type {CanvasViewWithRuntime} from "./interface/canvasViewWithRuntime";
 import {extractNodeBounds} from "./adapter/extractNodeBounds";
+import {renderAnchorMarkers} from "./ui/renderAnchorMarkers";
+import {extractNodeElement} from "./adapter/extractNodeElement";
 
 export default class FlexibleCanvasAnchorsPlugin extends Plugin {
+  private readonly anchorMarkers = new Set<HTMLElement>();
+
   override onload(): void {
+    this.register(() => {
+      this.clearAnchorMarkers();
+    });
+
     this.addCommand({
       id: "show-status",
       name: "Show plugin status",
@@ -28,7 +36,7 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
           const nodeId = entry[0];
           const runtimeNode = entry[1];
           return {
-            id : nodeId,
+            id: nodeId,
             bounds: extractNodeBounds(runtimeNode)
           }
         })
@@ -47,6 +55,40 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
       },
 
     });
+
+    this.addCommand({
+      id: "toggle-read-only-anchor-markers",
+      name: "Toggle read-only anchor markers",
+      callback: () => {
+        if (this.anchorMarkers.size > 0) {
+          this.clearAnchorMarkers();
+          new Notice("Anchor markers hidden");
+          return;
+        }
+
+        const canvas = this.getActiveCanvasRuntime();
+        if (!canvas) {
+          new Notice("Open a canvas before running showing anchor markers.");
+          return;
+        }
+
+        let markerCount = 0;
+
+        for (const runtimeNode of canvas.nodes.values()) {
+         const nodeElement = extractNodeElement(runtimeNode);
+         if(!nodeElement) {
+           continue;
+         }
+         const markers = renderAnchorMarkers(nodeElement);
+
+         for (const marker of markers) {
+           this.anchorMarkers.add(marker);
+           markerCount++;
+         }
+        }
+        new Notice(`${markerCount} anchor marker(s) shown.`);
+      }
+    })
   }
 
   private getActiveCanvasRuntime(): CanvasRuntime | null {
@@ -55,6 +97,14 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
       return null;
     }
     return (view as CanvasViewWithRuntime).canvas ?? null;
+  }
+
+  private clearAnchorMarkers(): void {
+    for (const marker of this.anchorMarkers) {
+      marker.remove();
+    }
+
+    this.anchorMarkers.clear();
   }
 
 }
