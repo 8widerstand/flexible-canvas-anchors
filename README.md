@@ -46,6 +46,7 @@ The runtime findings and resulting architecture are documented in
 
 The pure anchor geometry layer is now implemented independently of Obsidian. It calculates an anchor point from
 a node's bounds, a side, and a ratio between `0` and `1`.
+A Canvas node adapter now validates live internal node data and extracts the position and dimensions required by the geometry layer.
 
 ## Technical Constraints
 
