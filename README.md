@@ -55,7 +55,7 @@ represented in memory by its node identifier, side, and ratio.
 The markers can be selected even when Obsidian's native resize layer is displayed above them, while native resizing
 remains available between markers. All temporary markers and selection state are removed when the markers are hidden
 or when the plugin is disabled.
-![Flexible anchor markers displayed on Canvas nodes][img.png](img.png)
+![Flexible anchor markers displayed on Canvas nodes](img.png)
 
 ## Technical Constraints
 
