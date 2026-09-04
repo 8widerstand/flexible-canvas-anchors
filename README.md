@@ -52,11 +52,10 @@ The current interactive UI spike renders three temporary anchor markers on every
 total of twelve markers per node. A marker can be selected using the mouse or keyboard, and the selected anchor is
 represented in memory by its node identifier, side, and ratio.
 
-The markers can be selected even when Obsidian's native resize layer is displayed above them, while native resizing
-remains available between markers. All temporary markers and selection state are removed when the markers are hidden
-or when the plugin is disabled.
-![Flexible anchor markers displayed on Canvas nodes](img.png)
-
+A custom edge endpoint rendering spike can temporarily attach one endpoint of an existing edge to a selected marker on
+its current side. The custom position is reapplied after Obsidian's native edge rendering, so the endpoint remains at
+the selected ratio when a connected node is moved or resized. 
+![Flexible anchor markers displayed on Canvas nodes](img_1.png)
 ## Technical Constraints
 
 The official JSON Canvas format supports four connection sides but does not define a position along a side.

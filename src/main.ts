@@ -5,6 +5,10 @@ import {extractNodeBounds} from "./adapter/extractNodeBounds";
 import {ANCHOR_MARKER_CLASS, renderAnchorMarkers} from "./ui/renderAnchorMarkers";
 import {extractNodeElement} from "./adapter/extractNodeElement";
 import type {NodeAnchor} from "./model/nodeAnchor";
+import {renderEdgeWithAnchor} from "./adapter/renderEdgeWithAnchor";
+import {installEdgeUpdatePathHook} from "./adapter/installEdgeUpdatePathHook";
+import {isCanvasEdgeRuntime} from "./adapter/isCanvasEdgeRuntime";
+import {findEdgeEndpointForNode} from "./adapter/findEdgeEndpointForNode";
 const ANCHOR_CURSOR_OVERRIDE_CLASS = "flexible-canvas-anchors__cursor-override";
 
 export default class FlexibleCanvasAnchorsPlugin extends Plugin {
@@ -115,7 +119,66 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
         }
         new Notice(`${markerCount} anchor marker(s) shown.`);
       }
-    })
+    });
+
+    this.addCommand({
+      id: "apply-selected-anchor-to-connected-edge",
+      name: "Apply selected anchor to connected edge",
+      callback: () => {
+        const anchor = this.selectedAnchor;
+
+        if (anchor === null) {
+          new Notice("Select an anchor marker first.");
+          return;
+        }
+
+        const canvas = this.getActiveCanvasRuntime();
+
+        if (canvas === null) {
+          new Notice("Open a canvas before applying an anchor.");
+          return;
+        }
+
+        const connectedEdges = Array.from(canvas.edges.values()).filter(
+          (edge) => findEdgeEndpointForNode(edge, anchor.nodeId) !== null,);
+
+        if (connectedEdges.length !== 1) {
+          new Notice(`This experiment requires exactly one connected edge. Found: ${connectedEdges.length}.`);
+          return;
+        }
+
+        const edge = connectedEdges[0];
+
+        if (edge === undefined || !isCanvasEdgeRuntime(edge)) {
+          new Notice("The connected edge runtime is unavailable.");
+          return;
+        }
+
+        this.clearEdgeAnchorOverride();
+
+        let anchorApplied = false;
+
+        const cleanup = installEdgeUpdatePathHook(edge,
+          () => {
+            anchorApplied = renderEdgeWithAnchor(
+              edge,
+              anchor,
+            );
+          },
+        );
+
+        if (!anchorApplied) {
+          cleanup();
+
+          new Notice("Could not apply the anchor. For this experiment, select a marker on the edge's current side.",);
+          return;
+        }
+
+        this.edgeAnchorOverrideCleanup = cleanup;
+
+        new Notice(`Anchor applied at ${Math.round(anchor.position.ratio * 100)}%.`);
+      },
+    });
   }
 
   private getActiveCanvasRuntime(): CanvasRuntime | null {
@@ -127,6 +190,7 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
   }
 
   private clearAnchorMarkers(): void {
+    this.clearEdgeAnchorOverride();
     this.updateCursorOverride(null);
     for (const marker of this.anchorMarkers) {
       marker.remove();
@@ -210,4 +274,13 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
 
     this.cursorOverrideTarget?.addClass(ANCHOR_CURSOR_OVERRIDE_CLASS);
   }
+
+  private clearEdgeAnchorOverride(): void {
+    const cleanup = this.edgeAnchorOverrideCleanup;
+
+    this.edgeAnchorOverrideCleanup = null;
+    cleanup?.();
+  }
+
+  private edgeAnchorOverrideCleanup: (() => void) | null = null;
 }
