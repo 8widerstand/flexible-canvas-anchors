@@ -45,10 +45,17 @@ The runtime findings and resulting architecture are documented in
 
 The pure anchor geometry layer is now implemented independently of Obsidian. It calculates an anchor point from
 a node's bounds, a side, and a ratio between `0` and `1`.
-A read-only UI spike now renders three temporary anchor markers on every side of each live Canvas node.
-The markers follow node movement, resizing, and Canvas zoom, and they are removed when hidden or when the plugin is disabled.
-This spike does not yet create, reconnect, or persist Canvas edges.
-![img.png](img.png)
+A Canvas adapter extracts validated bounds and HTML elements from live runtime nodes without exposing the rest of the
+plugin to Obsidian's internal node structure.
+
+The current interactive UI spike renders three temporary anchor markers on every side of each live Canvas node, for a
+total of twelve markers per node. A marker can be selected using the mouse or keyboard, and the selected anchor is
+represented in memory by its node identifier, side, and ratio.
+
+The markers can be selected even when Obsidian's native resize layer is displayed above them, while native resizing
+remains available between markers. All temporary markers and selection state are removed when the markers are hidden
+or when the plugin is disabled.
+![Flexible anchor markers displayed on Canvas nodes][img.png](img.png)
 
 ## Technical Constraints
 
