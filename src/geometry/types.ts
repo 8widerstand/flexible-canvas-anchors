@@ -16,3 +16,12 @@ export interface Point {
   readonly x: number;
   readonly y: number;
 }
+
+export interface CubicBezier {
+  readonly from: Point;
+  readonly fromControlPoint: Point;
+  readonly toControlPoint: Point;
+  readonly to: Point;
+}
+
+export type BezierEndpoint = "from" | "to";
