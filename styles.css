@@ -1,13 +1,17 @@
-.flexible-canvas-anchors__marker {
+button.flexible-canvas-anchors__marker {
   position: absolute;
   box-sizing: border-box;
+  padding: 0;
   width: 12px;
   height: 12px;
   border: 2px solid var(--background-primary);
   border-radius: 50%;
   background-color: var(--interactive-accent);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   z-index: 10;
+  appearance: none;
+  box-shadow: none;
 }
 
 .flexible-canvas-anchors__marker[data-side="top"] {
@@ -32,4 +36,13 @@
   top: var(--flexible-canvas-anchors-ratio);
   left: 0;
   transform: translate(-50%, -50%);
+}
+
+button.flexible-canvas-anchors__marker.is-selected {
+  background-color: var(--text-normal);
+  box-shadow: 0 0 0 3px var(--interactive-accent);
+}
+
+.canvas-node-interaction-layer .flexible-canvas-anchors__cursor-override {
+  cursor: pointer;
 }
