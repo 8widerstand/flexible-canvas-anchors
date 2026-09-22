@@ -30,6 +30,10 @@ describe("isCanvasEdgeRuntime", () => {
           },
         },
       },
+      getData: () => ({
+        id: "edge-1",
+      }),
+      setData: () => undefined,
       updatePath: () => undefined,
     };
 

@@ -2,89 +2,115 @@ import { calculateAnchorOffset } from "../geometry/calculateAnchorOffset";
 import { calculateAnchorPoint } from "../geometry/calculateAnchorPoint";
 import { createCubicBezierPath } from "../geometry/createCubicBezierPath";
 import { translateBezierEndpoint } from "../geometry/translateBezierEndpoint";
-import type {AnchorPosition, CubicBezier, Point }from "../geometry/types";
-import type { CanvasEdgeRuntime } from "../interface/canvasEdgeRuntime";
+import type {AnchorPosition, AnchorSide, BezierEndpoint, CubicBezier, NodeBounds, Point,} from "../geometry/types";
+import type {CanvasEdgeLineEndRuntime, CanvasEdgeRuntime,} from "../interface/canvasEdgeRuntime";
 import type { NodeAnchor } from "../model/nodeAnchor";
+import { createTranslatedLineEndTransform } from "./createTranslatedLineEndTransform";
 import { extractEdgeBezier } from "./extractEdgeBezier";
 import { extractNodeBounds } from "./extractNodeBounds";
 import { findEdgeEndpointForNode } from "./findEdgeEndpointForNode";
 import { isCanvasEdgeRuntime } from "./isCanvasEdgeRuntime";
-import { createTranslatedLineEndTransform } from "./createTranslatedLineEndTransform";
 
-export function renderEdgeWithAnchor(edge: unknown, anchor: NodeAnchor): boolean {
+export function renderEdgeWithAnchor(edge: unknown, anchor: NodeAnchor,): boolean {
+  return renderEdgeWithAnchors(edge, [anchor]);
+}
+
+export function renderEdgeWithAnchors(edge: unknown, anchors: readonly NodeAnchor[],): boolean {
   if (!isCanvasEdgeRuntime(edge)) {
     return false;
   }
 
-  const endpoint = findEdgeEndpointForNode(edge, anchor.nodeId,);
+  const anchorsByEndpoint = resolveAnchorsByEndpoint(edge, anchors);
 
-  if (endpoint === null) {
+  if (anchorsByEndpoint === null) {
     return false;
   }
 
-  const runtimeEndpoint = endpoint === "from" ? edge.from : edge.to;
+  return renderResolvedAnchors(edge, anchorsByEndpoint);
+}
 
-  if (runtimeEndpoint.side !== anchor.position.side) {
-    return false;
+function resolveAnchorsByEndpoint(edge: CanvasEdgeRuntime, anchors: readonly NodeAnchor[],): Map<BezierEndpoint, NodeAnchor> | null {
+  const anchorsByEndpoint = new Map<BezierEndpoint, NodeAnchor>();
+
+  for (const anchor of anchors) {
+    const endpoint = findEdgeEndpointForNode(edge, anchor.nodeId,);
+
+    if (endpoint === null || anchorsByEndpoint.has(endpoint)) {return null;}
+
+    const runtimeEndpoint = endpoint === "from" ? edge.from : edge.to;
+
+    if (runtimeEndpoint.side !== anchor.position.side) return null;
+
+    anchorsByEndpoint.set(endpoint, anchor);
   }
 
-  const endpointBounds = extractNodeBounds(
-    runtimeEndpoint.node,
-  );
+  return anchorsByEndpoint.size === 0 ? null : anchorsByEndpoint;
+}
 
+function renderResolvedAnchors(edge: CanvasEdgeRuntime, anchorsByEndpoint: ReadonlyMap<BezierEndpoint, NodeAnchor>,): boolean {
   const fromBounds = extractNodeBounds(edge.from.node);
   const toBounds = extractNodeBounds(edge.to.node);
   const bezier = extractEdgeBezier(edge);
 
-  if (endpointBounds === null || fromBounds === null || toBounds === null || bezier === null) {
+  if (fromBounds === null || toBounds === null || bezier === null) {
     return false;
   }
 
-  const currentAnchor: AnchorPosition = {
-    side: runtimeEndpoint.side,
-    ratio: 0.5,
-  };
+  const fromAnchor = anchorsByEndpoint.get("from") ?? null;
+  const toAnchor = anchorsByEndpoint.get("to") ?? null;
 
-  const offset = calculateAnchorOffset(endpointBounds, currentAnchor, anchor.position,);
+  const translatedFromBezier = translateAnchoredEndpoint(bezier, "from", fromBounds, fromAnchor,);
 
-  const translatedBezier = translateBezierEndpoint(bezier, endpoint, offset,);
+  const translatedBezier = translateAnchoredEndpoint(translatedFromBezier, "to", toBounds, toAnchor,);
 
-  const fromAnchor: AnchorPosition = endpoint === "from"
-      ? anchor.position
-      : {
-        side: edge.from.side,
-        ratio: 0.5,
-      };
+  const fromPosition = fromAnchor?.position ?? createCenteredPosition(edge.from.side);
 
-  const toAnchor: AnchorPosition =
-    endpoint === "to"
-      ? anchor.position
-      : {
-        side: edge.to.side,
-        ratio: 0.5,
-      };
+  const toPosition = toAnchor?.position ?? createCenteredPosition(edge.to.side);
 
-  const fromBoundary = calculateAnchorPoint(fromBounds, fromAnchor,);
+  const fromBoundary = calculateAnchorPoint(fromBounds, fromPosition,);
 
-  const toBoundary = calculateAnchorPoint(toBounds, toAnchor,);
+  const toBoundary = calculateAnchorPoint(toBounds, toPosition,);
 
-  const pathData = createEdgePath(edge, translatedBezier, fromBoundary, toBoundary);
+  const pathData = createEdgePath(edge, translatedBezier, fromBoundary, toBoundary,);
 
   edge.path.interaction.setAttribute("d", pathData);
   edge.path.display.setAttribute("d", pathData);
 
-  const lineEnd = endpoint === "from" ? edge.fromLineEnd : edge.toLineEnd;
+  updateLineEnd(edge.fromLineEnd, fromAnchor, fromBoundary,);
 
-  const selectedBoundary = endpoint === "from" ? fromBoundary : toBoundary;
-
-  if (lineEnd !== null) {
-    lineEnd.el.style.transform = createTranslatedLineEndTransform(lineEnd.el.style.transform, selectedBoundary);
-  }
+  updateLineEnd(edge.toLineEnd, toAnchor, toBoundary,);
 
   return true;
 }
 
-function createEdgePath(edge: CanvasEdgeRuntime, bezier: CubicBezier, fromBoundary: Point, toBoundary: Point): string {
+function translateAnchoredEndpoint(bezier: CubicBezier, endpoint: BezierEndpoint, bounds: NodeBounds, anchor: NodeAnchor | null): CubicBezier {
+  if (anchor === null) {
+    return bezier;
+  }
+
+  const centeredPosition = createCenteredPosition(anchor.position.side);
+
+  const offset = calculateAnchorOffset(bounds, centeredPosition, anchor.position,);
+
+  return translateBezierEndpoint(bezier, endpoint, offset,);
+}
+
+function createCenteredPosition(side: AnchorSide,): AnchorPosition {
+  return {
+    side,
+    ratio: 0.5,
+  };
+}
+
+function updateLineEnd(lineEnd: CanvasEdgeLineEndRuntime | null, anchor: NodeAnchor | null, boundary: Point,): void {
+  if (lineEnd === null || anchor === null) {
+    return;
+  }
+
+  lineEnd.el.style.transform = createTranslatedLineEndTransform(lineEnd.el.style.transform, boundary);
+}
+
+function createEdgePath(edge: CanvasEdgeRuntime, bezier: CubicBezier, fromBoundary: Point, toBoundary: Point,): string {
   const pathParts: string[] = [];
 
   if (edge.fromLineEnd === null) {

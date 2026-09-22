@@ -8,6 +8,8 @@ export function isCanvasEdgeRuntime(value: unknown,): value is CanvasEdgeRuntime
 
   return (
     typeof value.id === "string" &&
+    typeof value.getData === "function" &&
+    typeof value.setData === "function" &&
     isEdgeEndpoint(value.from) &&
     isEdgeEndpoint(value.to) &&
     isEdgePath(value.path) &&
