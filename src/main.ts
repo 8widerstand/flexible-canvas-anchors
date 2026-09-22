@@ -9,17 +9,28 @@ import {renderEdgeWithAnchor} from "./adapter/renderEdgeWithAnchor";
 import {installEdgeUpdatePathHook} from "./adapter/installEdgeUpdatePathHook";
 import {isCanvasEdgeRuntime} from "./adapter/isCanvasEdgeRuntime";
 import {findEdgeEndpointForNode} from "./adapter/findEdgeEndpointForNode";
+import { persistEdgeAnchorMetadata } from "./adapter/persistEdgeAnchorMetadata";
 const ANCHOR_CURSOR_OVERRIDE_CLASS = "flexible-canvas-anchors__cursor-override";
+import { installPersistedEdgeAnchorHook } from "./adapter/installPersistedEdgeAnchorHook";
 
 export default class FlexibleCanvasAnchorsPlugin extends Plugin {
   private readonly anchorMarkers = new Set<HTMLElement>();
+  private readonly edgeAnchorOverrideCleanups =
+    new Map<string, () => void>();
   private selectedAnchor: NodeAnchor | null = null;
   private selectedAnchorMarker: HTMLElement | null = null;
   private cursorOverrideTarget: HTMLElement | null = null;
 
   override onload(): void {
+    this.app.workspace.onLayoutReady(() => {
+      this.restorePersistedEdgeAnchors();
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => {this.restorePersistedEdgeAnchors()}));
     this.register(() => {
       this.clearAnchorMarkers();
+      this.clearAllEdgeAnchorOverrides();
     });
 
     this.registerDomEvent(
@@ -154,7 +165,17 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
           return;
         }
 
-        this.clearEdgeAnchorOverride();
+        const endpoint = findEdgeEndpointForNode(
+          edge,
+          anchor.nodeId,
+        );
+
+        if (endpoint === null) {
+          new Notice("The selected node is not connected to this edge.");
+          return;
+        }
+
+        this.clearEdgeAnchorOverride(edge.id);
 
         let anchorApplied = false;
 
@@ -174,7 +195,35 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
           return;
         }
 
-        this.edgeAnchorOverrideCleanup = cleanup;
+        const isPersisted = persistEdgeAnchorMetadata(
+          canvas,
+          edge,
+          endpoint,
+          anchor.position.ratio,
+        );
+
+        if (!isPersisted) {
+          cleanup();
+          new Notice("The anchor could not be persisted.");
+          return;
+        }
+
+        cleanup();
+
+        const persistedCleanup =
+          installPersistedEdgeAnchorHook(edge);
+
+        if (persistedCleanup === null) {
+          new Notice(
+            "The persisted anchors could not be rendered.",
+          );
+          return;
+        }
+
+        this.edgeAnchorOverrideCleanups.set(
+          edge.id,
+          persistedCleanup,
+        );
 
         new Notice(`Anchor applied at ${Math.round(anchor.position.ratio * 100)}%.`);
       },
@@ -190,7 +239,6 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
   }
 
   private clearAnchorMarkers(): void {
-    this.clearEdgeAnchorOverride();
     this.updateCursorOverride(null);
     for (const marker of this.anchorMarkers) {
       marker.remove();
@@ -275,12 +323,55 @@ export default class FlexibleCanvasAnchorsPlugin extends Plugin {
     this.cursorOverrideTarget?.addClass(ANCHOR_CURSOR_OVERRIDE_CLASS);
   }
 
-  private clearEdgeAnchorOverride(): void {
-    const cleanup = this.edgeAnchorOverrideCleanup;
+  private restorePersistedEdgeAnchors(): void {
+    this.clearAllEdgeAnchorOverrides();
 
-    this.edgeAnchorOverrideCleanup = null;
-    cleanup?.();
+    const canvas = this.getActiveCanvasRuntime();
+
+    if (canvas === null) {
+      return;
+    }
+
+    for (const edge of canvas.edges.values()) {
+      if (!isCanvasEdgeRuntime(edge)) {
+        continue;
+      }
+
+      const cleanup =
+        installPersistedEdgeAnchorHook(edge);
+
+      if (cleanup === null) {
+        continue;
+      }
+
+      this.edgeAnchorOverrideCleanups.set(
+        edge.id,
+        cleanup,
+      );
+    }
   }
 
-  private edgeAnchorOverrideCleanup: (() => void) | null = null;
+  private clearEdgeAnchorOverride(edgeId: string): void {
+    const cleanup =
+      this.edgeAnchorOverrideCleanups.get(edgeId);
+
+    if (cleanup === undefined) {
+      return;
+    }
+
+    this.edgeAnchorOverrideCleanups.delete(edgeId);
+    cleanup();
+  }
+
+  private clearAllEdgeAnchorOverrides(): void {
+    const cleanups = Array.from(
+      this.edgeAnchorOverrideCleanups.values(),
+    );
+
+    this.edgeAnchorOverrideCleanups.clear();
+
+    for (const cleanup of cleanups) {
+      cleanup();
+    }
+  }
 }

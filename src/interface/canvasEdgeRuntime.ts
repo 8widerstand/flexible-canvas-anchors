@@ -1,4 +1,5 @@
 import type { AnchorSide } from "../geometry/types";
+import {CanvasEdgeDataRuntime} from "./canvasEdgeDataRuntime";
 
 export interface CanvasEdgeEndpointRuntime {
   readonly node: unknown;
@@ -24,7 +25,7 @@ export interface CanvasEdgeLineEndRuntime {
   readonly el: CanvasEdgeLineEndElementRuntime;
 }
 
-export interface CanvasEdgeRuntime {
+export interface CanvasEdgeRuntime extends CanvasEdgeDataRuntime {
   readonly id: string;
   readonly from: CanvasEdgeEndpointRuntime;
   readonly to: CanvasEdgeEndpointRuntime;

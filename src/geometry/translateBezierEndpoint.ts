@@ -1,10 +1,6 @@
 import type {BezierEndpoint, CubicBezier, Point} from "./types";
 
-export function translateBezierEndpoint(
-  bezier: CubicBezier,
-  endpoint: BezierEndpoint,
-  offset: Point,
-): CubicBezier {
+export function translateBezierEndpoint(bezier: CubicBezier, endpoint: BezierEndpoint, offset: Point,): CubicBezier {
   if (endpoint === "from") {
     return {
       ...bezier,
